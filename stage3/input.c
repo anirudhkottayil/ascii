@@ -6,7 +6,7 @@
 
 volatile sig_atomic_t got_sigint = 0;
 
-void handler(){
+void handler(int sig){
   got_sigint = 1;
 }
 
@@ -18,21 +18,42 @@ int walker(void){
   int itr = 0;
   char arr[4] = {'|', '/', '-', '\\'};
   int c;
-  while ((c = getchar()) != 'q' && got_sigint == 0){
+  printf("\033[2J");
+  printf("\033[%d;%dH%c",curr_height, curr_width, arr[itr%4]);
+  itr++;
+  while (got_sigint == 0){
+    c = getchar();
+    if (c == 'q') return 0;
     if (c == 'w'){
-
-
+      if (curr_height == 1) continue;
+      printf("\033[%d;%dH ", curr_height, curr_width);
+      printf("\033[%d;%dH%c",curr_height - 1, curr_width, arr[itr%4]);
+      fflush(stdout);
+      curr_height--;
+    } else if (c == 'a'){
+      if (curr_width == 1) continue;
+      printf("\033[%d;%dH ", curr_height, curr_width);
+      printf("\033[%d;%dH%c",curr_height, curr_width - 1, arr[itr%4]);
+      fflush(stdout);
+      curr_width--;
+    } else if (c == 's'){
+      if (curr_height == height) continue;
+      printf("\033[%d;%dH ", curr_height, curr_width);
+      printf("\033[%d;%dH%c",curr_height + 1, curr_width, arr[itr%4]);
+      fflush(stdout);
+      curr_height++;
+    } else if (c == 'd'){
+      if (curr_width == width) continue;
+      printf("\033[%d;%dH ", curr_height, curr_width);
+      printf("\033[%d;%dH%c",curr_height, curr_width + 1, arr[itr%4]);
+      fflush(stdout);
+      curr_width++;
+    } else {
+      continue;
     }
-
+    usleep(150000);
+    itr++;
   }
-  // while(itr < limit){
-  //   printf("\033[%d;%dH%c",1, itr + 1, arr[itr%4]);
-  //   fflush(stdout);
-  //   usleep(150000);
-  //   printf("\033[%d;%dH ", 1, itr + 1);
-  //   itr++; 
-  // }
-
   return 0;
 }
 
@@ -45,12 +66,14 @@ void destroy(struct termios *original){
 int main(void){
   signal(SIGINT, handler);
   struct termios raw, org;
-  tcgetattr(STDIN_FILENO, &org);
+  int rc;
+  rc = tcgetattr(STDIN_FILENO, &org);
+  if (rc == -1) return 1;
   raw = org;
   raw.c_lflag &= ~(ICANON | ECHO);
   tcsetattr(STDIN_FILENO, TCSANOW, &raw);
 
-  walker();
+  int rv = walker();
   destroy(&org);
 
   return 0;
