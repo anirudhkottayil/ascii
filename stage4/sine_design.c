@@ -18,7 +18,8 @@ void print_wave(const char *ramp, int width, float divisor, int mode) {
           if (mode == 1) input = (float) col;
           if (mode == 2) input = (float) col + row;
           float raw = sinf(input / divisor);          // -1 to 1
-          float brightness = (raw + 1.0f) / 2.0f;    // remapped to 0 to 1
+          if (mode == 3) raw = sinf(col / divisor) + sinf(row / divisor);
+          float brightness = (raw + 2.0f) / 4.0f;    // remapped to 0 to 1
           putchar(pick(brightness, ramp));
       }
       putchar('\n');
@@ -27,8 +28,8 @@ void print_wave(const char *ramp, int width, float divisor, int mode) {
 
 int main(void){
   const char* ramp = " .:-=+*#%@";
-  print_wave(ramp, 100, 6, 0); //row (horizontal)
-  print_wave(ramp, 100, 6, 1); //col (vertical)
-  print_wave(ramp, 100, 6, 2); // row + col (diagonal)
+  print_wave(ramp, 100, 6, 3); //row (horizontal)
+  // print_wave(ramp, 100, 6, 1); //col (vertical)
+  // print_wave(ramp, 100, 6, 2); // row + col (diagonal)
   return 0;
 }
