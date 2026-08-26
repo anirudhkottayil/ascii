@@ -51,7 +51,7 @@ void print_wave(const char *ramp, float divisor) {
     usleep(2000);
     time = time + 0.025f;
   }
-  printf("\033[0m");
+  printf("\033[0m\033[2J\033[H");
 }
 
 int main(void){
