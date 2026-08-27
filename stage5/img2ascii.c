@@ -92,8 +92,8 @@ int main(void){
   float scale = stbtt_ScaleForPixelHeight(&font, 32.0f);
 
   int cell = 32;
-  int x,y,n,img_size;
-  unsigned char *data = stbi_load("test1.jpg", &x, &y, &n, 0);
+  int x,y,channels,img_size;
+  unsigned char *data = stbi_load("test1.jpg", &x, &y, &channels, 0);
   if (data == NULL){
     free(ttf_buffer);
     printf("Failed to load image\n");
@@ -105,16 +105,42 @@ int main(void){
   int r,g,b; int idx = 0;
   int cols = x / cell;
   int rows = y / cell;
-  unsigned char* img_buffer = malloc((row * cols * cell) * sizeof(char));
+  unsigned char* img_buffer = calloc((((rows * cols) + 1) * sizeof(char)), 1);
   if (img_buffer == NULL){
     stbi_image_free(data);
     free(ttf_buffer);
     printf("Malloc failed\n");
     return 1;
   }
+  int offset = 0;
+  for (int row = 0; row < rows; row++){
+    int idx = 0;
+    for (int col = 0; col < cols; col+=(cell*channels)){
+      offset = ((row * x) + col);
+      int i = 0;
+      while (i < (cell*channels) && (col+i<cols)){
+        r = data[offset + i];
+        g = data[offset + i + 1];
+        b = data[offset + i + 2];
+        img_buffer[(row*x) + idx] += r + g + b;
+        i += 3;
+      }
+      idx++;
+    }
+  }
+  img_buffer[(rows*cols)] = '\0';
+
+  float brightness;
+  for (int i = 0; i < (rows*cols); i += cell){
+    brightness = (img_buffer[i]/3.0f) / 255.0f;
+    img_buffer[i] = pick(brightness, ramp);
+  }
 
 
 
+
+
+  free(img_buffer);
   free(ttf_buffer);
   printf("Font part successfull\n");
 
