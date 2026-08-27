@@ -91,6 +91,30 @@ int main(void){
   }
   float scale = stbtt_ScaleForPixelHeight(&font, 32.0f);
 
+  int cell = 32;
+  int x,y,n,img_size;
+  unsigned char *data = stbi_load("test1.jpg", &x, &y, &n, 0);
+  if (data == NULL){
+    free(ttf_buffer);
+    printf("Failed to load image\n");
+    return 1;
+  }
+  img_size = x * y * n;
+
+  // Build ascii img buffer
+  int r,g,b; int idx = 0;
+  int cols = x / cell;
+  int rows = y / cell;
+  unsigned char* img_buffer = malloc((row * cols * cell) * sizeof(char));
+  if (img_buffer == NULL){
+    stbi_image_free(data);
+    free(ttf_buffer);
+    printf("Malloc failed\n");
+    return 1;
+  }
+
+
+
   free(ttf_buffer);
   printf("Font part successfull\n");
 
@@ -114,6 +138,6 @@ int main(void){
   // }
 
 
-  // stbi_image_free(data);
+  stbi_image_free(data);
   return 0;
 }
