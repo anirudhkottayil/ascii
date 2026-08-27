@@ -1,7 +1,12 @@
+#define STB_TRUETYPE_IMPLEMENTATION
+#include "stb_truetype.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include <termios.h>
 #include <unistd.h>
@@ -16,54 +21,80 @@ char pick(float brightness, const char* ramp){
 }
 
 int main(void){
-  struct winsize w;
-  if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &w) == -1) return -1;
-  int width = w.ws_col; int height = w.ws_row;
-  printf("Screen Width: %d\n", width);
-  printf("Screen Height: %d\n", height);
+  // Screen dimensions
+  // struct winsize w;
+  // if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &w) == -1) return -1;
+  // int width = w.ws_col; int height = w.ws_row;
+  // printf("Screen Width: %d\n", width);
+  // printf("Screen Height: %d\n", height);
 
   const char* ramp = " .:-=+*#%@";
-  int x,y,n;
-  unsigned char *data = stbi_load("test1.jpg", &x, &y, &n, 0);
-  if (data == NULL){
-    printf("Failed to load image\n");
+  int n = strlen(ramp);
+
+  // Load image
+  // int x,y,n;
+  // unsigned char *data = stbi_load("test1.jpg", &x, &y, &n, 0);
+  // if (data == NULL){
+  //   printf("Failed to load image\n");
+  //   return 1;
+  // }
+
+  // Build ascii img buffer
+  // int r,g,b; int idx = 0;
+  // char* buffer = malloc(((x*y) + y + 1) * sizeof(char));
+  // if (buffer == NULL){
+  //   printf("Malloc failed\n");
+  //   return 1;
+  // }
+  //
+  // for (int i = 0; i < y;i++){
+  //   for (int j = 0; j < x;){
+  //     int offset = ((i*x)+j) * n; 
+  //     r = data[offset];
+  //     g = data[offset+1];
+  //     b = data[offset+2];
+  //     float brightness = ((r + g + b) / 3.0f) / 255.0f;
+  //     char c = pick(brightness, ramp);
+  //     buffer[idx++] = c;
+  //     j += 3;
+  //   }
+  //   buffer[idx++] = '\n';
+  // }
+  // buffer[idx]= '\0';
+  // free(buffer);
+
+
+  // Load font
+
+  FILE* fp = fopen("Px437_IBM_VGA_9x16.ttf", "rb");
+  if (fp == NULL){
+    printf("Unable to open font file\n");
     return 1;
   }
-
-  int r,g,b; int idx = 0;
-  char* buffer = malloc(((x*y) + y + 1) * sizeof(char));
-  if (buffer == NULL){
-    printf("Malloc failed\n");
+  fseek(fp, 0, SEEK_END);
+  long size = ftell(fp);
+  fseek(fp,0,SEEK_SET);
+  unsigned char* ttf_buffer = malloc(size);
+  if (ttf_buffer == NULL){
+    fclose(fp);
+    printf("Memory allocation failed for font buffer\n");
     return 1;
   }
+  fread(ttf_buffer, 1, size, fp);
+  fclose(fp);
 
-  for (int i = 0; i < y;i++){
-    for (int j = 0; j < x;){
-      int offset = ((i*x)+j) * n; 
-      r = data[offset];
-      g = data[offset+1];
-      b = data[offset+2];
-      float brightness = ((r + g + b) / 3.0f) / 255.0f;
-      char c = pick(brightness, ramp);
-      buffer[idx++] = c;
-      j += 3;
-    }
-    buffer[idx++] = '\n';
-  }
-  buffer[idx]= '\0';
-
-  FILE *fptr;
-  fptr = fopen("newasc.txt", "w");
-  if (fptr == NULL){
-    printf("Failed to open file");
-    free(buffer);
+  stbtt_fontinfo font;
+  if (!stbtt_InitFont(&font, ttf_buffer, stbtt_GetFontOffsetForIndex(ttf_buffer, 0))){
+    free(ttf_buffer);
+    printf("Failed to initialize font\n");
     return 1;
   }
-  fprintf(fptr, "%s", buffer);
-  fclose(fptr);
-  free(buffer);
+  float scale = stbtt_ScaleForPixelHeight(&font, 32.0f);
 
-  printf("File successfully written");
+  free(ttf_buffer);
+  printf("Font part successfull\n");
+
+  // printf("File successfully written");
 
   // float block_w = x / width;
   // float block_h = y / height;
@@ -83,6 +114,6 @@ int main(void){
   // }
 
 
-  stbi_image_free(data);
+  // stbi_image_free(data);
   return 0;
 }
