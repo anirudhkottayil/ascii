@@ -59,9 +59,9 @@ int main(void){
     printf("Failed to initialize font\n");
     return 1;
   }
-  float scale = stbtt_ScaleForPixelHeight(&font, 32.0f);
+  float scale = stbtt_ScaleForPixelHeight(&font, 56.0f);
 
-  int cell = 32;
+  int cell = 56;
   int x,y,channels;
   unsigned char *data = stbi_load("test1.jpg", &x, &y, &channels, 0);
   if (data == NULL){
@@ -98,9 +98,44 @@ int main(void){
   for (int row = 0; row < (rows*cols); row++){
     img_buffer[row] = pick(img_buffer[row] / (cell*cell), ramp);
   }
-  for (int row = 200; row < 210; row++){
-    printf("%lf\n", img_buffer[row]);
+
+  unsigned char* canvas = calloc(cell*cell*rows*cols,1);
+  if (canvas == NULL){
+    printf("Memory allocation for canvas failed\n");
+    free(img_buffer);
+    free(ttf_buffer);
+    stbi_image_free(data);
+    return 1;
   }
+
+  for (int i = 0; i < n; i++){
+    glyphs[i].pixels = stbtt_GetCodepointBitmap(&font, scale, scale, ramp[i], &glyphs[i].w, &glyphs[i].h, &glyphs[i].xoff, &glyphs[i].yoff);
+  }
+
+  offset = 0;
+  int glyph_w, glyph_h;
+  for(int row = 0; row < rows; row++){
+    for (int col = 0; col < cols; col++){
+      offset = (row * cols) + col;
+      int glyph_idx = (int)img_buffer[offset];
+      glyph_w = glyphs[glyph_idx].w;
+      glyph_h = glyphs[glyph_idx].h;
+      int idx = row * cell;
+      for (int i = 0; i < glyph_h && i < cell; i++){
+        int copy_w = glyph_w < cell ? glyph_w : cell;
+        memcpy(&canvas[(idx*cols*cell) + (col * cell)], &glyphs[glyph_idx].pixels[i*glyph_w],copy_w);
+        idx++;
+      }
+    }
+  }
+
+  stbi_write_png("rendered_im3.png", cell*cols, cell*rows, 1, canvas, cell*cols);
+
+
+  for (int i = 0; i < n; i++){
+    stbtt_FreeBitmap(glyphs[i].pixels, NULL);
+  }
+
   free(img_buffer);
   free(ttf_buffer);
 
