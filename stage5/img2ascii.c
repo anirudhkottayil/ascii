@@ -1,9 +1,9 @@
 #define STB_TRUETYPE_IMPLEMENTATION
-#include "stb_truetype.h"
+#include "utils/stb_truetype.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
+#include "utils/stb_image_write.h"
 #define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include "utils/stb_image.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,12 +31,13 @@ int main(void){
   // printf("Screen Height: %d\n", height);
 
   const char* ramp = " .:-=+*#%@";
+  // const char* ramp = ".:+#@";
   int n = strlen(ramp);
   GlyphBitmap glyphs[n];
 
   // Load font
 
-  FILE* fp = fopen("Px437_IBM_VGA_9x16.ttf", "rb");
+  FILE* fp = fopen("utils/Px437_IBM_VGA_9x16.ttf", "rb");
   if (fp == NULL){
     printf("Unable to open font file\n");
     return 1;
@@ -59,11 +60,12 @@ int main(void){
     printf("Failed to initialize font\n");
     return 1;
   }
-  float scale = stbtt_ScaleForPixelHeight(&font, 56.0f);
+  int cell = 4;
+  int render_size = 2;
+  float scale = stbtt_ScaleForPixelHeight(&font, (float)render_size);
 
-  int cell = 56;
   int x,y,channels;
-  unsigned char *data = stbi_load("test1.jpg", &x, &y, &channels, 0);
+  unsigned char *data = stbi_load("input/test2.jpg", &x, &y, &channels, 0);
   if (data == NULL){
     free(ttf_buffer);
     printf("Failed to load image\n");
@@ -91,15 +93,35 @@ int main(void){
       r = data[offset];
       g = data[offset + 1];
       b = data[offset + 2];
-      img_buffer[(rc*cols) + cc] += ((r+g+b)/3.0f)/255.0f;
+      // img_buffer[(rc*cols) + cc] += ((r+g+b)/3.0f)/255.0f;
+      img_buffer[(rc*cols) + cc] += (0.299*r + 0.587*g + 0.114*b)/255.0f;
     }
   }
 
   for (int row = 0; row < (rows*cols); row++){
-    img_buffer[row] = pick(img_buffer[row] / (cell*cell), ramp);
+    float b = img_buffer[row] / (cell*cell);
+    b = powf(b, 0.65f);
+    img_buffer[row] = pick(b, ramp);
   }
+  // FILE write
+  // FILE* f = fopen("test1.txt", "w");
+  // if (f == NULL){
+  //   free(ttf_buffer);
+  //   free(img_buffer);
+  //   stbi_image_free(data);
+  //   printf("File fail\n");
+  //   return 1;
+  // }
+  // for (int row = 0; row < rows; row+=2){
+  //   for (int col = 0; col < cols; col++){
+  //     offset = (row*cols) + col;
+  //     fprintf(f, "%c",ramp[(int)img_buffer[offset]]);
+  //   }
+  //   fprintf(f,"\n");
+  // }
+  // fclose(f);
 
-  unsigned char* canvas = calloc(cell*cell*rows*cols,1);
+  unsigned char* canvas = calloc(render_size*render_size*rows*cols,1);
   if (canvas == NULL){
     printf("Memory allocation for canvas failed\n");
     free(img_buffer);
@@ -120,22 +142,23 @@ int main(void){
       int glyph_idx = (int)img_buffer[offset];
       glyph_w = glyphs[glyph_idx].w;
       glyph_h = glyphs[glyph_idx].h;
-      int idx = row * cell;
-      for (int i = 0; i < glyph_h && i < cell; i++){
-        int copy_w = glyph_w < cell ? glyph_w : cell;
-        memcpy(&canvas[(idx*cols*cell) + (col * cell)], &glyphs[glyph_idx].pixels[i*glyph_w],copy_w);
+      int idx = row * render_size;
+      for (int i = 0; i < glyph_h && i < render_size; i++){
+        int copy_w = glyph_w < render_size ? glyph_w : render_size;
+        memcpy(&canvas[(idx*cols*render_size) + (col * render_size)], &glyphs[glyph_idx].pixels[i*glyph_w],copy_w);
         idx++;
       }
     }
   }
 
-  stbi_write_png("rendered_im3.png", cell*cols, cell*rows, 1, canvas, cell*cols);
+  stbi_write_png("rendered_sz4.png", render_size*cols, render_size*rows, 1, canvas, render_size*cols);
 
 
   for (int i = 0; i < n; i++){
     stbtt_FreeBitmap(glyphs[i].pixels, NULL);
   }
 
+  free(canvas);
   free(img_buffer);
   free(ttf_buffer);
 
