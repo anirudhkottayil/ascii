@@ -8,9 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <termios.h>
-#include <unistd.h>
-#include <sys/ioctl.h>
+#include <time.h>
+// #include <sys/ioctl.h>
 
 typedef struct { int w, h, xoff, yoff; unsigned char *pixels; } GlyphBitmap;
 
@@ -30,6 +29,7 @@ int main(void){
   // printf("Screen Width: %d\n", width);
   // printf("Screen Height: %d\n", height);
 
+  clock_t begin = clock();
   const char* edges = "-|\\/";
   // const char* ramp = " .:-=+*#%@";
   const char* ramp = ".:+#@";
@@ -62,16 +62,18 @@ int main(void){
     printf("Failed to initialize font\n");
     return 1;
   }
+  clock_t font_end = clock();
 
   // For future me: make sure to keep cell even. Otherwise the quadrant formula doesnt work 
   // and you end up with a lot of slashes instead.
-  int cell = 14;
+  int cell = 8;
   if (cell % 2 != 0) cell++;
-  int render_size = 12;
+  int render_size = 6;
   float scale = stbtt_ScaleForPixelHeight(&font, (float)render_size);
 
-  int x,y,channels;
-  unsigned char *data = stbi_load("input/test1.jpg", &x, &y, &channels, 0);
+  int channels = 3;
+  int x,y,comp;
+  unsigned char *data = stbi_load("input/virtua.png", &x, &y, &comp, channels);
   if (data == NULL){
     free(ttf_buffer);
     printf("Failed to load image\n");
@@ -79,7 +81,7 @@ int main(void){
   }
 
   // Build ascii img buffer
-  int r,g,b; int idx = 0;
+  int r,g,b;
   int cols = x / cell;
   int rows = y / cell;
   float* img_buffer = calloc(rows * cols , sizeof(float));
@@ -89,10 +91,19 @@ int main(void){
     printf("Malloc img_buffer failed\n");
     return 1;
   }
+  float* color_buffer = calloc(rows * cols * 3, sizeof(float));
+  if (color_buffer == NULL){
+    free(img_buffer);
+    stbi_image_free(data);
+    free(ttf_buffer);
+    printf("Malloc img_buffer failed\n");
+    return 1;
+  }
   float* quad_buffer = calloc(rows * cols * 4, sizeof(float));
   if (quad_buffer == NULL){
     stbi_image_free(data);
     free(img_buffer);
+    free(color_buffer);
     free(ttf_buffer);
     printf("Malloc img_buffer failed\n");
     return 1;
@@ -109,6 +120,9 @@ int main(void){
       r = data[offset];
       g = data[offset + 1];
       b = data[offset + 2];
+      color_buffer[((rc*cols) +cc) * 3] += r;
+      color_buffer[(((rc*cols) +cc) * 3) + 1] += g;
+      color_buffer[(((rc*cols) +cc) * 3) + 2] += b;
       // img_buffer[(rc*cols) + cc] += ((r+g+b)/3.0f)/255.0f;
       float sum = (0.299f*r + 0.587f*g + 0.114f*b)/255.0f;
       img_buffer[(rc*cols) + cc] += sum;
@@ -127,6 +141,10 @@ int main(void){
     tr = quad_buffer[row*4 + 1] / quarter;
     bl = quad_buffer[row*4 + 2] / quarter;
     br = quad_buffer[row*4 + 3] / quarter;
+
+    color_buffer[row*3 + 0] /= (cell * cell);
+    color_buffer[row*3 + 1] /= (cell * cell);
+    color_buffer[row*3 + 2] /= (cell * cell);
 
     hor = fabsf((tl + tr)/2 - (bl + br)/2);
     vert = fabsf((tl + bl)/2 - (tr + br)/2);
@@ -151,12 +169,19 @@ int main(void){
     img_buffer[row] = strongest > cutoff ? (n + edge_idx) : pick(b, ramp);
   }
 
-  unsigned char* canvas = calloc(render_size*render_size*rows*cols,1);
+  clock_t img_end = clock();
+
+  int color_mode = 1;
+
+  int num_channels = color_mode ? 3 : 1;
+
+  unsigned char* canvas = calloc(render_size*render_size*rows*cols*num_channels,1);
   if (canvas == NULL){
     printf("Memory allocation for canvas failed\n");
     free(img_buffer);
     free(ttf_buffer);
     free(quad_buffer);
+    free(color_buffer);
     stbi_image_free(data);
     return 1;
   }
@@ -169,25 +194,42 @@ int main(void){
 }
 
   offset = 0;
+  int cidx = 0;
   int glyph_w, glyph_h;
   for(int row = 0; row < rows; row++){
     for (int col = 0; col < cols; col++){
       offset = (row * cols) + col;
+      cidx = offset * 3;
+      float cr = color_buffer[cidx], cg = color_buffer[cidx+1], cb = color_buffer[cidx+2];
       int glyph_idx = (int)img_buffer[offset];
       glyph_w = glyphs[glyph_idx].w;
       glyph_h = glyphs[glyph_idx].h;
       int idx = row * render_size;
       for (int i = 0; i < glyph_h && i < render_size; i++){
+        unsigned char* glyph_row = &glyphs[glyph_idx].pixels[i*glyph_w];
+        int base_px = (idx*cols*render_size) + (col * render_size);
         int copy_w = glyph_w < render_size ? glyph_w : render_size;
-        memcpy(&canvas[(idx*cols*render_size) + (col * render_size)], &glyphs[glyph_idx].pixels[i*glyph_w],copy_w);
+        if (!color_mode) {
+          memcpy(&canvas[(idx*cols*render_size) + (col * render_size)], glyph_row,copy_w);
+        }
+        else {
+          for (int j = 0; j < copy_w; j++){
+            unsigned char alpha = glyph_row[j];
+            int base_off = (base_px + j) * 3;
+            canvas[base_off + 0] = (unsigned char) (cr * alpha / 255.0f);
+            canvas[base_off + 1] = (unsigned char) (cg * alpha / 255.0f);
+            canvas[base_off + 2] = (unsigned char) (cb * alpha / 255.0f);
+          }
+        }
         idx++;
       }
     }
   }
 
-  stbi_write_png("rendered_sz5.png", render_size*cols, render_size*rows, 1, canvas, render_size*cols);
+  stbi_write_png("rendered_sz5.png", render_size*cols, render_size*rows, num_channels, canvas, render_size*cols*num_channels);
 
 
+  clock_t write_end = clock();
   for (int i = 0; i < n + n_edges; i++){
     stbtt_FreeBitmap(glyphs[i].pixels, NULL);
   }
@@ -196,23 +238,12 @@ int main(void){
   free(img_buffer);
   free(ttf_buffer);
   free(quad_buffer);
+  free(color_buffer);
   stbi_image_free(data);
+  clock_t end = clock();
+  printf("Font loading time: %lf\n", (double)(font_end - begin)/ CLOCKS_PER_SEC);
+  printf("Img loading time: %lf\n", (double)(img_end - font_end)/ CLOCKS_PER_SEC);
+  printf("Write time: %lf\n", (double)(write_end - img_end)/ CLOCKS_PER_SEC);
+  printf("Total loading time: %lf\n", (double)(end - begin)/ CLOCKS_PER_SEC);
   return 0;
 }
-  // FILE write
-  // FILE* f = fopen("test1.txt", "w");
-  // if (f == NULL){
-  //   free(ttf_buffer);
-  //   free(img_buffer);
-  //   stbi_image_free(data);
-  //   printf("File fail\n");
-  //   return 1;
-  // }
-  // for (int row = 0; row < rows; row+=2){
-  //   for (int col = 0; col < cols; col++){
-  //     offset = (row*cols) + col;
-  //     fprintf(f, "%c",ramp[(int)img_buffer[offset]]);
-  //   }
-  //   fprintf(f,"\n");
-  // }
-  // fclose(f);
