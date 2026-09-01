@@ -8,8 +8,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <time.h>
-// #include <sys/ioctl.h>
 
 typedef struct { int w, h, xoff, yoff; unsigned char *pixels; } GlyphBitmap;
 
@@ -21,15 +19,12 @@ char pick(float brightness, const char* ramp){
   return index;
 }
 
-int main(void){
-  // Screen dimensions
-  // struct winsize w;
-  // if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &w) == -1) return -1;
-  // int width = w.ws_col; int height = w.ws_row;
-  // printf("Screen Width: %d\n", width);
-  // printf("Screen Height: %d\n", height);
+int main(int argc, char** argv){
 
-  clock_t begin = clock();
+  const char* input_path = argv[1];
+  const char* output_path = argv[2];
+  int cell = atoi(argv[3]);
+  int render_size = atoi(argv[4]);
   const char* edges = "-|\\/";
   // const char* ramp = " .:-=+*#%@";
   const char* ramp = ".:+#@";
@@ -38,7 +33,6 @@ int main(void){
   GlyphBitmap glyphs[n + n_edges];
 
   // Load font
-
   FILE* fp = fopen("utils/Px437_IBM_VGA_9x16.ttf", "rb");
   if (fp == NULL){
     printf("Unable to open font file\n");
@@ -62,18 +56,15 @@ int main(void){
     printf("Failed to initialize font\n");
     return 1;
   }
-  clock_t font_end = clock();
 
   // For future me: make sure to keep cell even. Otherwise the quadrant formula doesnt work 
   // and you end up with a lot of slashes instead.
-  int cell = 8;
   if (cell % 2 != 0) cell++;
-  int render_size = 6;
   float scale = stbtt_ScaleForPixelHeight(&font, (float)render_size);
 
   int channels = 3;
   int x,y,comp;
-  unsigned char *data = stbi_load("input/virtua.png", &x, &y, &comp, channels);
+  unsigned char *data = stbi_load(input_path, &x, &y, &comp, channels);
   if (data == NULL){
     free(ttf_buffer);
     printf("Failed to load image\n");
@@ -109,6 +100,7 @@ int main(void){
     return 1;
   }
 
+  // Load img data into buffer while recording color and cell features
   int rc = 0; int offset = 0; int half = cell / 2;
   int qrow = 0; int qcol = 0; int quad = 0;
   for (int row = 0; row < rows*cell; row++){
@@ -134,6 +126,7 @@ int main(void){
     }
   }
 
+  // normalize the values (in range btw 0 to 1) for each cell and pick a ramp character or edge character
   int quarter = (cell / 2) * (cell / 2); float cutoff = 0.227f;
   float tl, tr, bl, br, hor, vert, slash, back, strongest, edge_idx;
   for (int row = 0; row < (rows*cols); row++){
@@ -169,11 +162,10 @@ int main(void){
     img_buffer[row] = strongest > cutoff ? (n + edge_idx) : pick(b, ramp);
   }
 
-  clock_t img_end = clock();
-
-  int color_mode = 1;
-
-  int num_channels = color_mode ? 3 : 1;
+  // For future if a black and while mode feature is added
+  // int color_mode = 1;
+  // int num_channels = color_mode ? 3 : 1;
+  int num_channels = 3;
 
   unsigned char* canvas = calloc(render_size*render_size*rows*cols*num_channels,1);
   if (canvas == NULL){
@@ -186,13 +178,16 @@ int main(void){
     return 1;
   }
 
+  // Get the map for each character in ramp stored in glyphs.pixels
   for (int i = 0; i < n; i++){
     glyphs[i].pixels = stbtt_GetCodepointBitmap(&font, scale, scale, ramp[i], &glyphs[i].w, &glyphs[i].h, &glyphs[i].xoff, &glyphs[i].yoff);
   }
+  // Get the map for the edges
   for (int i = 0; i < n_edges; i++){
     glyphs[n+i].pixels = stbtt_GetCodepointBitmap(&font, scale, scale, edges[i], &glyphs[n+i].w, &glyphs[n+i].h, &glyphs[n+i].xoff, &glyphs[n+i].yoff);
 }
 
+  // Loop through img_buffer and for each cell copy th relevant character from glyphs to canvas
   offset = 0;
   int cidx = 0;
   int glyph_w, glyph_h;
@@ -209,41 +204,30 @@ int main(void){
         unsigned char* glyph_row = &glyphs[glyph_idx].pixels[i*glyph_w];
         int base_px = (idx*cols*render_size) + (col * render_size);
         int copy_w = glyph_w < render_size ? glyph_w : render_size;
-        if (!color_mode) {
-          memcpy(&canvas[(idx*cols*render_size) + (col * render_size)], glyph_row,copy_w);
-        }
-        else {
-          for (int j = 0; j < copy_w; j++){
-            unsigned char alpha = glyph_row[j];
-            int base_off = (base_px + j) * 3;
-            canvas[base_off + 0] = (unsigned char) (cr * alpha / 255.0f);
-            canvas[base_off + 1] = (unsigned char) (cg * alpha / 255.0f);
-            canvas[base_off + 2] = (unsigned char) (cb * alpha / 255.0f);
-          }
+        for (int j = 0; j < copy_w; j++){
+          unsigned char pix = glyph_row[j];
+          int base_off = (base_px + j) * 3;
+          canvas[base_off + 0] = (unsigned char) (cr * pix / 255.0f);
+          canvas[base_off + 1] = (unsigned char) (cg * pix / 255.0f);
+          canvas[base_off + 2] = (unsigned char) (cb * pix / 255.0f);
         }
         idx++;
       }
     }
   }
 
-  stbi_write_png("rendered_sz5.png", render_size*cols, render_size*rows, num_channels, canvas, render_size*cols*num_channels);
+  // Write the image to a .png using canvas
+  stbi_write_png(output_path, render_size*cols, render_size*rows, num_channels, canvas, render_size*cols*num_channels);
 
-
-  clock_t write_end = clock();
+  // Free all allocated memory
   for (int i = 0; i < n + n_edges; i++){
     stbtt_FreeBitmap(glyphs[i].pixels, NULL);
   }
-
   free(canvas);
   free(img_buffer);
   free(ttf_buffer);
   free(quad_buffer);
   free(color_buffer);
   stbi_image_free(data);
-  clock_t end = clock();
-  printf("Font loading time: %lf\n", (double)(font_end - begin)/ CLOCKS_PER_SEC);
-  printf("Img loading time: %lf\n", (double)(img_end - font_end)/ CLOCKS_PER_SEC);
-  printf("Write time: %lf\n", (double)(write_end - img_end)/ CLOCKS_PER_SEC);
-  printf("Total loading time: %lf\n", (double)(end - begin)/ CLOCKS_PER_SEC);
   return 0;
 }
