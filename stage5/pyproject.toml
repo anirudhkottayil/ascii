@@ -4,7 +4,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "asc2img"
+name = "img2asc"
 version = "0.1.0"
 
 [project.scripts]
