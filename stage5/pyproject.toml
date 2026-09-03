@@ -8,8 +8,8 @@ name = "img2asc"
 version = "0.1.0"
 
 [project.scripts]
-asc2img = "asc2img.cli:main"
-asc2vid = "asc2img.video:main"
+img2asc = "img2asc.cli:main"
+vid2asc = "img2asc.video:main"
 
 [tool.setuptools.package-data]
-asc2img = ["bin/*"]
+img2asc = ["bin/*"]
