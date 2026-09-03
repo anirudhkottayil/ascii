@@ -25,15 +25,18 @@ int main(int argc, char** argv){
   const char* output_path = argv[2];
   int cell = atoi(argv[3]);
   int render_size = atoi(argv[4]);
-  const char* edges = "-|\\/";
-  // const char* ramp = " .:-=+*#%@";
-  const char* ramp = ".:+#@";
-  int n = strlen(ramp);
-  int n_edges = strlen(edges);
+  const char* font_path = argv[5];
+  static const char edges[] = "-|\\/";
+  // static const char* ramp = " .:-=+*#%@";
+  static const char ramp[] = ".:+#@";
+  #define RAMP_LEN (sizeof(ramp) - 1)
+  #define EDGE_LEN (sizeof(edges) - 1)
+  int n = RAMP_LEN;
+  int n_edges = EDGE_LEN;
   GlyphBitmap glyphs[n + n_edges];
 
   // Load font
-  FILE* fp = fopen("utils/Px437_IBM_VGA_9x16.ttf", "rb");
+  FILE* fp = fopen(font_path, "rb");
   if (fp == NULL){
     printf("Unable to open font file\n");
     return 1;
