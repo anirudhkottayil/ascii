@@ -1,0 +1,15 @@
+# pyproject.toml
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "asc2img"
+version = "0.1.0"
+
+[project.scripts]
+asc2img = "asc2img.cli:main"
+asc2vid = "asc2img.video:main"
+
+[tool.setuptools.package-data]
+asc2img = ["bin/*"]
