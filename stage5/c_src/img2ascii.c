@@ -38,7 +38,7 @@ int main(int argc, char** argv){
   // Load font
   FILE* fp = fopen(font_path, "rb");
   if (fp == NULL){
-    printf("Unable to open font file\n");
+    fprintf(stderr, "Unable to open font file\n");
     return 1;
   }
   fseek(fp, 0, SEEK_END);
@@ -47,7 +47,7 @@ int main(int argc, char** argv){
   unsigned char* ttf_buffer = malloc(size);
   if (ttf_buffer == NULL){
     fclose(fp);
-    printf("Memory allocation failed for font buffer\n");
+    fprintf(stderr, "Memory allocation failed for font buffer\n");
     return 1;
   }
   fread(ttf_buffer, 1, size, fp);
@@ -56,7 +56,7 @@ int main(int argc, char** argv){
   stbtt_fontinfo font;
   if (!stbtt_InitFont(&font, ttf_buffer, stbtt_GetFontOffsetForIndex(ttf_buffer, 0))){
     free(ttf_buffer);
-    printf("Failed to initialize font\n");
+    fprintf(stderr, "Failed to initialize font\n");
     return 1;
   }
 
@@ -70,7 +70,7 @@ int main(int argc, char** argv){
   unsigned char *data = stbi_load(input_path, &x, &y, &comp, channels);
   if (data == NULL){
     free(ttf_buffer);
-    printf("Failed to load image\n");
+    fprintf(stderr,"Failed to load image\n");
     return 1;
   }
 
@@ -82,7 +82,7 @@ int main(int argc, char** argv){
   if (img_buffer == NULL){
     stbi_image_free(data);
     free(ttf_buffer);
-    printf("Malloc img_buffer failed\n");
+    fprintf(stderr, "Malloc img_buffer failed\n");
     return 1;
   }
   float* color_buffer = calloc(rows * cols * 3, sizeof(float));
@@ -90,7 +90,7 @@ int main(int argc, char** argv){
     free(img_buffer);
     stbi_image_free(data);
     free(ttf_buffer);
-    printf("Malloc img_buffer failed\n");
+    fprintf(stderr, "Malloc color_buffer failed\n");
     return 1;
   }
   float* quad_buffer = calloc(rows * cols * 4, sizeof(float));
@@ -99,7 +99,7 @@ int main(int argc, char** argv){
     free(img_buffer);
     free(color_buffer);
     free(ttf_buffer);
-    printf("Malloc img_buffer failed\n");
+    fprintf(stderr, "Malloc img_buffer failed\n");
     return 1;
   }
 
@@ -172,7 +172,7 @@ int main(int argc, char** argv){
 
   unsigned char* canvas = calloc(render_size*render_size*rows*cols*num_channels,1);
   if (canvas == NULL){
-    printf("Memory allocation for canvas failed\n");
+    fprintf(stderr, "Memory allocation for canvas failed\n");
     free(img_buffer);
     free(ttf_buffer);
     free(quad_buffer);
