@@ -1,14 +1,11 @@
 import argparse
 import subprocess
 import sys
-import os
 from pathlib import Path
 
-def find_binary():
-    matches = list((Path(__file__).parent / "bin").glob("img2asc-bin*"))
-    if not matches:
-        sys.exit("Bundled binary missing — this install may be corrupted.")
-    return matches[0]
+_PKG_DIR = Path(__file__).parent
+BINARY_PATH = _PKG_DIR / "bin" / ("img2asc-bin.exe" if sys.platform == "win32" else "img2asc-bin")
+FONT_PATH = _PKG_DIR / "bin" / "Px437_IBM_VGA_9x16.ttf"
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Convert an image to ASCII art")
@@ -20,10 +17,9 @@ def main() -> None:
 
     args.output = str(Path(args.output).with_suffix(".png"))
 
-    binary = find_binary()
-    cmd = [str(binary), str(Path(args.input).resolve()), str(Path(args.output).resolve()),
-           str(args.cell), str(args.render_size)]
-    result = subprocess.run(cmd, capture_output=True, text=True, cwd=binary.parent)
+    cmd = [str(BINARY_PATH), str(Path(args.input).resolve()), str(Path(args.output).resolve()), str(args.cell), str(args.render_size), str(FONT_PATH)]
+
+    result = subprocess.run(cmd, capture_output=True, text=True, cwd=BINARY_PATH.parent)
     if result.returncode != 0:
         sys.exit(f"Conversion failed: {result.stderr}")
     print(f"Saved to {args.output}")
