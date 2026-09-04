@@ -24,7 +24,11 @@ int main(int argc, char** argv){
   const char* input_path = argv[1];
   const char* output_path = argv[2];
   int cell = atoi(argv[3]);
+  // For future me: make sure to keep cell even. Otherwise the quadrant formula doesnt work 
+  // and you end up with a lot of slashes instead.
+  if (cell % 2 != 0) cell++;
   int render_size = atoi(argv[4]);
+  if (render_size % 2 != 0) render_size++;
   const char* font_path = argv[5];
   static const char edges[] = "-|\\/";
   // static const char* ramp = " .:-=+*#%@";
@@ -60,9 +64,6 @@ int main(int argc, char** argv){
     return 1;
   }
 
-  // For future me: make sure to keep cell even. Otherwise the quadrant formula doesnt work 
-  // and you end up with a lot of slashes instead.
-  if (cell % 2 != 0) cell++;
   float scale = stbtt_ScaleForPixelHeight(&font, (float)render_size);
 
   int channels = 3;
