@@ -28,4 +28,4 @@ jobs:
       - name: Build wheel
         run: pip install build && python -m build --wheel
       - uses: actions/upload-artifact@v4
-        with: { name: wheel-${{ matrix.os }}, path: stage5/dist/*.whl }
+        with: { name: "wheel-${{ matrix.os }}", path: "stage5/dist/*.whl" }
