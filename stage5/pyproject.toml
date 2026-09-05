@@ -9,7 +9,6 @@ version = "0.1.0"
 
 [project.scripts]
 img2asc = "img2asc.cli:main"
-vid2asc = "img2asc.video:main"
 
 [tool.setuptools.package-data]
 img2asc = ["bin/*"]
