@@ -1,0 +1,31 @@
+name: Build platform wheels
+on: { workflow_dispatch: {}, push: { tags: ["v*"] } }
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            compile: gcc c_src/img2ascii.c -o src/img2asc/bin/img2asc-bin -lm -static
+          - os: macos-latest
+            compile: cc c_src/img2ascii.c -o src/img2asc/bin/img2asc-bin -lm
+          - os: windows-latest
+            compile: gcc c_src/img2ascii.c -o src/img2asc/bin/img2asc-bin.exe -lm
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: stage5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up MinGW (Windows only)
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with: { install: mingw-w64-x86_64-gcc }
+      - name: Compile
+        run: ${{ matrix.compile }}
+      - name: Bundle font
+        run: cp c_src/Px437_IBM_VGA_9x16.ttf src/img2asc/bin/
+      - name: Build wheel
+        run: pip install build && python -m build --wheel
+      - uses: actions/upload-artifact@v4
+        with: { name: wheel-${{ matrix.os }}, path: stage5/dist/*.whl }
