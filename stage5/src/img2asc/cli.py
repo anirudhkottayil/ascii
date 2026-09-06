@@ -23,7 +23,7 @@ def main() -> None:
 
     result = subprocess.run(cmd, capture_output=True, text=True, cwd=BINARY_PATH.parent)
     if result.returncode != 0:
-        sys.exit(f"Conversion failed: {result.stdout}")
+        sys.exit(f"Conversion failed: {result.stderr}")
     print(f"Saved to {args.output}")
 
 
