@@ -2,7 +2,7 @@ import argparse
 import subprocess
 import sys
 from pathlib import Path
-from _paths import BINARY_PATH, FONT_PATH
+from ._paths import BINARY_PATH, FONT_PATH
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Convert an image to ASCII art")
@@ -15,7 +15,7 @@ def main() -> None:
     args.output = str(Path(args.output).with_suffix(".mp4" if args.video else ".png"))
 
     if args.video:
-        from video import convert_video
+        from .video import convert_video
         convert_video(Path(args.input).resolve(), Path(args.output), args.cell, args.render_size)
         return
 

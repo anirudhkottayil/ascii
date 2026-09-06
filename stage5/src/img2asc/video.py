@@ -3,7 +3,7 @@ import os
 import tempfile
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from _paths import BINARY_PATH, FONT_PATH
+from ._paths import BINARY_PATH, FONT_PATH
 
 def get_frame_rate(video_path):
     result = subprocess.run(
