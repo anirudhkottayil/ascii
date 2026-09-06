@@ -1,6 +1,7 @@
 import argparse
 import subprocess
 import sys
+import shutil
 from pathlib import Path
 from ._paths import BINARY_PATH, FONT_PATH
 
@@ -15,6 +16,8 @@ def main() -> None:
     args.output = str(Path(args.output).with_suffix(".mp4" if args.video else ".png"))
 
     if args.video:
+        if shutil.which("ffmpeg") is None or shutil.which("ffprobe") is None:
+            sys.exit("ffmpeg (with ffprobe) is required for --video but wasn't found on your PATH. Install it from https://ffmpeg.org/download.html and try again.")
         from .video import convert_video
         convert_video(Path(args.input).resolve(), Path(args.output), args.cell, args.render_size)
         return

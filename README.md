@@ -1,30 +1,38 @@
+<div align="center">
+
+![img2asc banner](assets/banner.gif)
+
 # img2asc
 
 **Turn any image or video into retro, color ASCII art.**
 
+`img2asc` samples an image — or every frame of a video — into a grid of cells, picks a character for each one based on brightness and detected edges, and renders the result back out in a classic IBM VGA terminal font, in full color, as a real PNG or MP4.
+
 [![Build platform wheels](https://github.com/anirudhkottayil/ascii/actions/workflows/build-wheels.yml/badge.svg)](https://github.com/anirudhkottayil/ascii/actions/workflows/build-wheels.yml)
+[![Installs with pipx](https://img.shields.io/badge/installs%20with-pipx-blueviolet)](https://pipx.pypa.io/)
+[![Last commit](https://img.shields.io/github/last-commit/anirudhkottayil/ascii?color=ff69b4)](https://github.com/anirudhkottayil/ascii/commits/main)
 
-![img2asc banner](assets/banner.gif)
+</div>
 
-`img2asc` samples an image — or every frame of a video — into a grid of cells, picks a character for each one based on brightness and detected edges, and renders the whole thing back out in a classic IBM VGA terminal font, in full color. The output is a real PNG or MP4, for video.
+---
 
 ## Installation
 
-Pick the wheel for your platform and install it with [pipx](https://pipx.pypa.io/)
+Pick the wheel for your platform and install it with [pipx](https://pipx.pypa.io/) — no cloning, no build step, nothing to compile.
 
 **Linux**
 ```bash
-pipx install https://github.com/anirudhkottayil/ascii/releases/download/v0.1.0/img2asc-0.1.0-py3-none-linux_x86_64.whl
+pipx install https://github.com/anirudhkottayil/ascii/releases/download/v0.1.1/img2asc-0.1.0-py3-none-linux_x86_64.whl
 ```
 
 **macOS**
 ```bash
-pipx install https://github.com/anirudhkottayil/ascii/releases/download/v0.1.0/img2asc-0.1.0-py3-none-macosx_10_15_universal2.whl
+pipx install https://github.com/anirudhkottayil/ascii/releases/download/v0.1.1/img2asc-0.1.0-py3-none-macosx_10_15_universal2.whl
 ```
 
 **Windows**
 ```powershell
-pipx install https://github.com/anirudhkottayil/ascii/releases/download/v0.1.0/img2asc-0.1.0-py3-none-win_amd64.whl
+pipx install https://github.com/anirudhkottayil/ascii/releases/download/v0.1.1/img2asc-0.1.0-py3-none-win_amd64.whl
 ```
 
 Don't have pipx? `pip install --user pipx && pipx ensurepath`, then reopen your terminal.
