@@ -15,4 +15,4 @@ class bdist_wheel(_bdist_wheel):
         _, _, plat = super().get_tag()
         return "py3", "none", plat
 
-setup(distclass=BinaryDistribution)
+setup(distclass=BinaryDistribution, cmdclass={"bdist_wheel": bdist_wheel})
