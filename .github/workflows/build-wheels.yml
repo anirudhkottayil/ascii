@@ -8,7 +8,7 @@ jobs:
           - os: ubuntu-latest
             compile: gcc c_src/img2ascii.c -o src/img2asc/bin/img2asc-bin -lm -static
           - os: macos-latest
-            compile: cc c_src/img2ascii.c -o src/img2asc/bin/img2asc-bin -lm
+            compile: cc -arch arm64 -o /tmp/img2asc-arm64 c_src/img2ascii.c -lm && cc -arch x86_64 -o /tmp/img2asc-x86_64 c_src/img2ascii.c -lm && lipo -create /tmp/img2asc-arm64 /tmp/img2asc-x86_64 -output src/img2asc/bin/img2asc-bin
           - os: windows-latest
             compile: gcc c_src/img2ascii.c -o src/img2asc/bin/img2asc-bin.exe -lm
     runs-on: ${{ matrix.os }}
